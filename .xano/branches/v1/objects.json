@@ -1000,13 +1000,6 @@
   },
   {
     "id": 0,
-    "path": "apis/crud/api_group.xs",
-    "status": "new",
-    "type": "api_group",
-    "staged": true
-  },
-  {
-    "id": 0,
     "path": "apis/crud/subject_GET.xs",
     "status": "new",
     "type": "api_endpoint",
