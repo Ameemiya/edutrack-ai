@@ -1,0 +1,20 @@
+// Add Aluno record
+query aluno verb=POST {
+  api_group = "Event Logs"
+
+  input {
+    dblink {
+      table = ""
+    }
+  }
+
+  stack {
+    db.add "" {
+      enforce_hidden_fields = false
+      data = {created_at: "now"}
+    } as $aluno
+  }
+
+  response = $aluno
+  guid = "K-X2B8qugCDfqFi6kGkmhjz6NbQ"
+}
