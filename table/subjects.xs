@@ -17,16 +17,14 @@ table subjects {
     // Workload hours for the subject
     int hours?
   
-    // Reference to the authenticated user in Xano user table
     int user_id? {
-      table = ""
+      table = "user"
     }
   }
 
   index = [
     {type: "primary", field: [{name: "id"}]}
     {type: "btree", field: [{name: "created_at", op: "desc"}]}
-    {type: "btree", field: [{name: "user_id"}]}
   ]
 
   guid = "Vkp5xWW1BhQex5NPsWQToMA3FxY"
