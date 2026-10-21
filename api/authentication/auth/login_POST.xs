@@ -8,59 +8,33 @@ query "auth/login" verb=POST {
   }
 
   stack {
-    // Get the user record via email
-    db.get "" {
+    db.get user {
       field_name = "email"
       field_value = $input.email
-      output = [
-        "id"
-        "created_at"
-        "name"
-        "email"
-        "password"
-        "account_id"
-        "role"
-      ]
+      output = ["id", "created_at", "name", "email", "password"]
     } as $user
   
-    // Check to make sure a user with that email exists
     precondition ($user != null) {
-      error_type = "accessdenied"
       error = "Invalid Credentials."
     }
   
-    // Check that the password matches the hashed password
     security.check_password {
       text_password = $input.password
       hash_password = $user.password
     } as $pass_result
   
-    // Verify that the password check passed
     precondition ($pass_result) {
-      error_type = "accessdenied"
       error = "Invalid Credentials."
     }
   
-    // Create an authentication token
     security.create_auth_token {
-      table = ""
+      table = "user"
       extras = {}
       expiration = 86400
       id = $user.id
     } as $authToken
-  
-    // Create an event log for login
-    function.run "Getting Started Template/create_event_log" {
-      input = {
-        user_id   : $user.id
-        account_id: $user.account_id
-        action    : "login"
-        metadata  : $user
-      }
-    } as $event_log
   }
 
-  response = {authToken: $authToken, user_id: $user.id}
-  tags = ["xano:quick-start"]
-  guid = "g6E8E2wr8FPWccUg-4Qqxu2csFg"
+  response = {authToken: $authToken}
+  guid = "peFKUOyFauYPZ50GhaPiJpso_gU"
 }
