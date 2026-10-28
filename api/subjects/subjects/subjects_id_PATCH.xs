@@ -21,14 +21,15 @@ query "subjects/{subjects_id}" verb=PATCH {
       error = "Unauthorized access to this subject."
     }
   
+    util.get_raw_input {
+      encoding = "json"
+      exclude_middleware = false
+    } as $raw_input
+
     db.patch subjects {
       field_name = "id"
       field_value = $input.subjects_id
-      data = {
-        name   : $input.name
-        teacher: $input.teacher
-        hours  : $input.hours
-      }
+      data = `$input|pick:($raw_input|keys)`
     } as $subject
   }
 

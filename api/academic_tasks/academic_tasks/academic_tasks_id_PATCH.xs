@@ -23,16 +23,15 @@ query "academic_tasks/{academic_tasks_id}" verb=PATCH {
       error = "Unauthorized access to this academic task."
     }
   
+    util.get_raw_input {
+      encoding = "json"
+      exclude_middleware = false
+    } as $raw_input
+
     db.patch academic_tasks {
       field_name = "id"
       field_value = $input.academic_tasks_id
-      data = {
-        title      : $input.title
-        description: $input.description
-        due_date   : $input.due_date
-        status     : $input.status
-        subject_id : $input.subject_id
-      }
+      data = `$input|pick:($raw_input|keys)`
     } as $task
   }
 

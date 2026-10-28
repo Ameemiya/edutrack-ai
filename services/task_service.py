@@ -125,6 +125,85 @@ def list_tasks(auth_token: Optional[str] = None) -> List[Dict[str, Any]]:
     return list(_get_local_store())
 
 
+_UNSET = object()
+
+
+def update_task(
+    task_id: int,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    due_date: Any = _UNSET,
+    status: Optional[str] = None,
+    subject_id: Any = _UNSET,
+    auth_token: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """Update an existing academic task via PATCH /academic_tasks/{id}."""
+    if status is not None and status not in VALID_STATUSES:
+        raise ValueError(f"Status inválido: '{status}'. Deve ser um de: {', '.join(VALID_STATUSES)}.")
+
+    payload: Dict[str, Any] = {}
+    if title is not None:
+        payload["title"] = title.strip()
+    if description is not None:
+        payload["description"] = description.strip()
+    if due_date is not _UNSET:
+        payload["due_date"] = due_date
+    if status is not None:
+        payload["status"] = status
+    if subject_id is not _UNSET:
+        payload["subject_id"] = subject_id
+
+    token = _get_auth_token(auth_token)
+    api_url = _get_api_url()
+    if token and api_url:
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            resp = requests.patch(
+                f"{api_url}/academic_tasks/{task_id}",
+                json=payload,
+                headers=headers,
+                timeout=5,
+            )
+            if resp.status_code == 200:
+                return resp.json()
+        except Exception:
+            pass
+
+    # Local fallback
+    store = _get_local_store()
+    for item in store:
+        if item.get("id") == task_id:
+            item.update(payload)
+            return item
+    return None
+
+
+def delete_task(task_id: int, auth_token: Optional[str] = None) -> bool:
+    """Delete an academic task by ID via DELETE /academic_tasks/{id}."""
+    token = _get_auth_token(auth_token)
+    api_url = _get_api_url()
+    if token and api_url:
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            resp = requests.delete(
+                f"{api_url}/academic_tasks/{task_id}",
+                headers=headers,
+                timeout=5,
+            )
+            if resp.status_code in (200, 204):
+                store = _get_local_store()
+                store[:] = [t for t in store if t.get("id") != task_id]
+                return True
+        except Exception:
+            pass
+
+    # Local fallback
+    store = _get_local_store()
+    initial_len = len(store)
+    store[:] = [t for t in store if t.get("id") != task_id]
+    return len(store) < initial_len
+
+
 def create_task(
     title: str,
     description: Optional[str] = None,
