@@ -1,6 +1,7 @@
 import streamlit as st
 from services import subject_service
 from services import auth_service
+from scripts.calculate_progress import calculate_subject_progress, calculate_all_subjects_progress
 
 st.set_page_config(page_title="Disciplinas", page_icon="📚", layout="wide")
 
@@ -23,6 +24,23 @@ with tab_lista:
 
         if success:
             if isinstance(result, list) and len(result) > 0:
+                # Painel de monitoramento consolidado via calculate_progress.py
+                with st.expander("📊 Monitoramento Geral de Progresso (calculate_progress.py)", expanded=False):
+                    with st.spinner("Calculando progresso das disciplinas no Xano..."):
+                        gen_data = calculate_all_subjects_progress(auth_token=auth_token)
+
+                    if gen_data.get("status") == "success":
+                        c_g1, c_g2, c_g3 = st.columns(3)
+                        c_g1.metric("Progresso Geral", f"{gen_data.get('overall_progress_percentage', 0.0)}%")
+                        c_g2.metric("Disciplinas Monitoradas", gen_data.get("total_subjects", 0))
+                        c_g3.metric("Tarefas (Concluídas / Total)", f"{gen_data.get('total_completed_tasks', 0)} / {gen_data.get('total_tasks', 0)}")
+                        st.progress(min(gen_data.get("overall_progress_percentage", 0.0) / 100.0, 1.0))
+
+                        with st.expander("📄 Ver JSON Consolidado"):
+                            st.json(gen_data)
+
+                st.write(f"Exibindo **{len(result)}** disciplina(s):")
+
                 for item in result:
                     subject_id = item.get("id")
                     subject_name = item.get("name", "Sem Nome")
@@ -33,7 +51,13 @@ with tab_lista:
                         st.markdown(f"**Carga Horária:** {hours}h")
                         st.caption(f"ID: {subject_id} | Criado em: {item.get('created_at', '-')}")
 
-                        col_edit, col_del = st.columns([1, 1])
+                        # Botões de ação com ícone para monitorar progresso
+                        col_prog, col_edit, col_del = st.columns([1, 1, 1])
+
+                        # Monitorar disciplina com calculate_progress.py
+                        with col_prog:
+                            if st.button("📊 Monitorar", key=f"prog_btn_{subject_id}"):
+                                st.session_state[f"show_progress_{subject_id}"] = not st.session_state.get(f"show_progress_{subject_id}", False)
 
                         # Editar disciplina
                         with col_edit:
@@ -44,6 +68,27 @@ with tab_lista:
                         with col_del:
                             if st.button("🗑️ Excluir", key=f"del_btn_{subject_id}", type="secondary"):
                                 st.session_state[f"confirm_delete_subject_{subject_id}"] = True
+
+                        # Exibição do monitoramento de progresso da disciplina
+                        if st.session_state.get(f"show_progress_{subject_id}"):
+                            st.markdown("---")
+                            st.markdown("##### 📊 Monitoramento de Progresso")
+                            prog_info = calculate_subject_progress(subject_id, auth_token=auth_token)
+
+                            if prog_info.get("status") == "success":
+                                pct = prog_info.get("progress_percentage", 0.0)
+                                st.write(f"**Conclusão das Tarefas:** `{pct}%`")
+                                st.progress(min(pct / 100.0, 1.0))
+
+                                p1, p2, p3 = st.columns(3)
+                                p1.metric("Total Tarefas", prog_info.get("total_tasks", 0))
+                                p2.metric("Concluídas", prog_info.get("completed_tasks", 0))
+                                p3.metric("Pendentes", prog_info.get("pending_tasks", 0))
+
+                                with st.expander("📄 Ver JSON do Script"):
+                                    st.json(prog_info)
+                            else:
+                                st.error(prog_info.get("error", "Não foi possível carregar o progresso."))
 
                         # Confirmação de exclusão
                         if st.session_state.get(f"confirm_delete_subject_{subject_id}"):
