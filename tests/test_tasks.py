@@ -32,6 +32,28 @@ class TestTaskService(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("não autenticado", msg.lower())
 
+    def test_update_and_delete_task(self):
+        task = task_service.create_task(
+            title="Tarefa Teste",
+            description="Descrição teste",
+            status="pending",
+        )
+        task_id = task["id"]
+
+        updated = task_service.update_task(task_id, status="completed", title="Tarefa Atualizada")
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated["status"], "completed")
+        self.assertEqual(updated["title"], "Tarefa Atualizada")
+
+        # Status validation
+        with self.assertRaises(ValueError):
+            task_service.update_task(task_id, status="invalid_status")
+
+        # Delete
+        success = task_service.delete_task(task_id)
+        self.assertTrue(success)
+        self.assertEqual(len(task_service.list_tasks()), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

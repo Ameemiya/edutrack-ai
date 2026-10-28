@@ -23,17 +23,98 @@ with tab_lista:
 
         if success:
             if isinstance(result, list) and len(result) > 0:
-                # Formata os dados para exibição amigável
-                display_data = []
                 for item in result:
-                    display_data.append({
-                        "ID": item.get("id"),
-                        "Nome da Disciplina": item.get("name", "N/D"),
-                        "Professor": item.get("teacher") or item.get("professor") or "Não informado",
-                        "Carga Horária (h)": item.get("hours") or "-",
-                        "Data de Criação": str(item.get("created_at", "-")),
-                    })
-                st.dataframe(display_data, use_container_width=True)
+                    subject_id = item.get("id")
+                    subject_name = item.get("name", "Sem Nome")
+                    teacher = item.get("teacher") or item.get("professor") or "Não informado"
+                    hours = item.get("hours") or "-"
+
+                    with st.expander(f"📚 {subject_name} — Professor(a): {teacher}", expanded=False):
+                        st.markdown(f"**Carga Horária:** {hours}h")
+                        st.caption(f"ID: {subject_id} | Criado em: {item.get('created_at', '-')}")
+
+                        col_edit, col_del = st.columns([1, 1])
+
+                        # Editar disciplina
+                        with col_edit:
+                            if st.button("✏️ Editar", key=f"edit_btn_{subject_id}"):
+                                st.session_state[f"editing_subject_{subject_id}"] = True
+
+                        # Excluir disciplina
+                        with col_del:
+                            if st.button("🗑️ Excluir", key=f"del_btn_{subject_id}", type="secondary"):
+                                st.session_state[f"confirm_delete_subject_{subject_id}"] = True
+
+                        # Confirmação de exclusão
+                        if st.session_state.get(f"confirm_delete_subject_{subject_id}"):
+                            st.warning(f"Tem certeza que deseja excluir **{subject_name}**? Esta ação não pode ser desfeita.")
+                            col_yes, col_no = st.columns(2)
+                            with col_yes:
+                                if st.button("✅ Confirmar Exclusão", key=f"confirm_yes_{subject_id}", type="primary"):
+                                    with st.spinner("Excluindo..."):
+                                        deleted = subject_service.delete_subject(subject_id, auth_token=auth_token)
+                                    if deleted:
+                                        st.success(f"Disciplina '{subject_name}' excluída com sucesso!")
+                                        st.session_state.pop(f"confirm_delete_subject_{subject_id}", None)
+                                        st.rerun()
+                                    else:
+                                        st.error("Falha ao excluir a disciplina. Tente novamente.")
+                            with col_no:
+                                if st.button("❌ Cancelar", key=f"confirm_no_{subject_id}"):
+                                    st.session_state.pop(f"confirm_delete_subject_{subject_id}", None)
+                                    st.rerun()
+
+                        # Formulário de edição inline
+                        if st.session_state.get(f"editing_subject_{subject_id}"):
+                            st.markdown("---")
+                            st.markdown("**Editar Disciplina:**")
+                            with st.form(key=f"form_edit_subject_{subject_id}"):
+                                edit_nome = st.text_input(
+                                    "Nome da Disciplina *",
+                                    value=subject_name,
+                                    key=f"edit_name_{subject_id}",
+                                )
+                                edit_professor = st.text_input(
+                                    "Professor(a)",
+                                    value=teacher if teacher != "Não informado" else "",
+                                    key=f"edit_teacher_{subject_id}",
+                                )
+                                edit_horas = st.number_input(
+                                    "Carga Horária (horas)",
+                                    min_value=1,
+                                    max_value=500,
+                                    value=int(hours) if str(hours).isdigit() else 60,
+                                    step=10,
+                                    key=f"edit_hours_{subject_id}",
+                                )
+                                col_save, col_cancel = st.columns(2)
+                                with col_save:
+                                    save_edit = st.form_submit_button("💾 Salvar Alterações", type="primary")
+                                with col_cancel:
+                                    cancel_edit = st.form_submit_button("Cancelar")
+
+                            if save_edit:
+                                if not edit_nome.strip():
+                                    st.error("O nome da disciplina é obrigatório.")
+                                else:
+                                    with st.spinner("Atualizando no Xano..."):
+                                        updated = subject_service.update_subject(
+                                            subject_id,
+                                            name=edit_nome,
+                                            teacher=edit_professor,
+                                            hours=int(edit_horas),
+                                            auth_token=auth_token,
+                                        )
+                                    if updated:
+                                        st.success(f"Disciplina '{edit_nome}' atualizada com sucesso!")
+                                        st.session_state.pop(f"editing_subject_{subject_id}", None)
+                                        st.rerun()
+                                    else:
+                                        st.error("Falha ao atualizar a disciplina. Tente novamente.")
+
+                            if cancel_edit:
+                                st.session_state.pop(f"editing_subject_{subject_id}", None)
+                                st.rerun()
             else:
                 st.info("ℹ️ Nenhuma disciplina cadastrada no momento. Adicione sua primeira matéria na aba 'Nova Disciplina'!")
         else:
