@@ -3,15 +3,15 @@ table user {
 
   schema {
     int id
-    timestamp created_at?=now {
-      visibility = "private"
-    }
-  
     text name? filters=trim
     email email? filters=trim|lower
     password password? {
       sensitive = true
       visibility = "internal"
+    }
+  
+    timestamp created_at?=now {
+      visibility = "private"
     }
   }
 

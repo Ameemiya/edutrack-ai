@@ -22,10 +22,10 @@ query "auth/signup" verb=POST {
     db.add user {
       enforce_hidden_fields = false
       data = {
-        created_at: "now"
         name      : $input.name
         email     : $input.email
         password  : $input.password
+        created_at: "now"
       }
     } as $user
   
@@ -38,5 +38,5 @@ query "auth/signup" verb=POST {
   }
 
   response = {authToken: $authToken}
-  guid = "r8NIKt3-wOSwgrX2RftDnZi9clQ"
+  guid = "qjFhJQm90gY-Kv32rfUp53mQjCI"
 }
