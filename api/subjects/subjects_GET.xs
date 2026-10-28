@@ -8,7 +8,7 @@ query subjects verb=GET {
 
   stack {
     db.query subjects {
-      where = [{field: "user_id", op: "==", value: $auth.id}] == true
+      where = $db.subjects.user_id == $auth.id
       return = {type: "list"}
     } as $subjects
   }

@@ -1,4 +1,4 @@
-# api-crud Specification
+git commit -m "feat: implementa endpoints CRUD"# api-crud Specification
 
 ## Purpose
 
