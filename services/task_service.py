@@ -66,6 +66,10 @@ def _get_auth_token(token: Optional[str] = None) -> Optional[str]:
     """Retrieve auth token from argument or session state."""
     if token:
         return token
+    _load_env_file()
+    env_token = os.environ.get("XANO_AUTH_TOKEN") or os.environ.get("AUTH_TOKEN")
+    if env_token:
+        return env_token
     if st is not None and _st_runtime_exists():
         try:
             return st.session_state.get("auth_token")
