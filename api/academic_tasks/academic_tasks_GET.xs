@@ -8,7 +8,7 @@ query academic_tasks verb=GET {
 
   stack {
     db.query academic_tasks {
-      where = [{field: "user_id", op: "==", value: $auth.id}] == true
+      where = $db.academic_tasks.user_id == $auth.id
       return = {type: "list"}
     } as $tasks
   }
