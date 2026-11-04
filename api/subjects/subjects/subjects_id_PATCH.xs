@@ -25,7 +25,7 @@ query "subjects/{subjects_id}" verb=PATCH {
       encoding = "json"
       exclude_middleware = false
     } as $raw_input
-
+  
     db.patch subjects {
       field_name = "id"
       field_value = $input.subjects_id

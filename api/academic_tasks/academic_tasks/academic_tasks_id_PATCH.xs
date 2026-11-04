@@ -27,7 +27,7 @@ query "academic_tasks/{academic_tasks_id}" verb=PATCH {
       encoding = "json"
       exclude_middleware = false
     } as $raw_input
-
+  
     db.patch academic_tasks {
       field_name = "id"
       field_value = $input.academic_tasks_id
