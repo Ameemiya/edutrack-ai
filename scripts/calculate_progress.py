@@ -97,6 +97,14 @@ def calculate_subject_progress(
         return json.dumps(result, indent=2, ensure_ascii=False) if as_json else result
 
     subject_name = target_subject.get("name", f"Disciplina #{subject_id}")
+    teacher_name = (
+        target_subject.get("teacher")
+        or target_subject.get("professor")
+        or target_subject.get("docente")
+        or target_subject.get("instructor")
+        or target_subject.get("prof")
+    )
+    subject_hours = target_subject.get("hours") or target_subject.get("carga_horaria")
 
     # 2. Fetch tasks from Xano or fallback
     tasks_list: List[Dict[str, Any]] = []
@@ -124,6 +132,9 @@ def calculate_subject_progress(
     result = {
         "subject_id": subject_id,
         "subject_name": subject_name,
+        "teacher": teacher_name,
+        "professor": teacher_name,
+        "hours": subject_hours,
         "total_tasks": total_tasks,
         "completed_tasks": completed_tasks,
         "pending_tasks": pending_tasks,
@@ -186,6 +197,14 @@ def calculate_all_subjects_progress(
     for subj in subjects_list:
         sub_id = subj.get("id")
         sub_name = subj.get("name", f"Disciplina #{sub_id}")
+        teacher_name = (
+            subj.get("teacher")
+            or subj.get("professor")
+            or subj.get("docente")
+            or subj.get("instructor")
+            or subj.get("prof")
+        )
+        subject_hours = subj.get("hours") or subj.get("carga_horaria")
 
         subj_tasks = [t for t in tasks_list if t.get("subject_id") == sub_id]
         tot = len(subj_tasks)
@@ -199,6 +218,9 @@ def calculate_all_subjects_progress(
         progress_by_subject.append({
             "subject_id": sub_id,
             "subject_name": sub_name,
+            "teacher": teacher_name,
+            "professor": teacher_name,
+            "hours": subject_hours,
             "total_tasks": tot,
             "completed_tasks": comp,
             "pending_tasks": pend,

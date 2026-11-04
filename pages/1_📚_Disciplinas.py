@@ -1,6 +1,7 @@
 import streamlit as st
 from services import subject_service
 from services import auth_service
+from services import report_service
 from scripts.calculate_progress import calculate_subject_progress, calculate_all_subjects_progress
 
 st.set_page_config(page_title="Disciplinas", page_icon="📚", layout="wide")
@@ -38,6 +39,28 @@ with tab_lista:
 
                         with st.expander("📄 Ver JSON Consolidado"):
                             st.json(gen_data)
+
+                        st.markdown("---")
+                        st.markdown("**Exportar Relatório Acadêmico (PDF):**")
+                        try:
+                            user_info = st.session_state.get("user")
+                            pdf_bytes_disc = report_service.generate_student_pdf_report(
+                                auth_token=auth_token,
+                                user_data=user_info,
+                                subjects=result if isinstance(result, list) else None,
+                            )
+                            user_id_slug = f"_{user_info.get('id')}" if (user_info and user_info.get("id")) else ""
+                            st.download_button(
+                                label="📥 Gerar e Baixar Relatório (PDF)",
+                                data=pdf_bytes_disc,
+                                file_name=f"relatorio_desempenho{user_id_slug}.pdf",
+                                mime="application/pdf",
+                                type="primary",
+                                use_container_width=True,
+                                key="btn_download_pdf_disc_single",
+                            )
+                        except Exception as e:
+                            st.error(f"Erro ao preparar relatório de desempenho: {e}")
 
                 st.write(f"Exibindo **{len(result)}** disciplina(s):")
 

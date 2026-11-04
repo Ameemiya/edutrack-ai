@@ -2,6 +2,7 @@ import streamlit as st
 from services import subject_service
 from services import task_service
 from services import auth_service
+from services import report_service
 
 # Configuração da Página
 st.set_page_config(page_title="EduTrack AI", page_icon="🎓", layout="wide")
@@ -118,6 +119,35 @@ if menu_option == "Dashboard":
                 st.page_link("pages/2_📝_Tarefas.py", label="Ver / Gerenciar Tarefas", icon="📝")
             except Exception:
                 pass
+
+        # Seção para Geração e Download de Relatório de Desempenho
+        st.markdown("---")
+        with st.container(border=True):
+            st.subheader("📄 Relatório de Desempenho Acadêmico (PDF)")
+            st.write(
+                "Baixe em um clique o relatório formal em PDF com o seu desempenho acadêmico, "
+                "incluindo taxa de conclusão, detalhamento por disciplina e tarefas cadastradas."
+            )
+
+            try:
+                pdf_bytes = report_service.generate_student_pdf_report(
+                    auth_token=auth_token,
+                    user_data=user_data,
+                    subjects=subjects_list,
+                    tasks=tasks_list,
+                )
+                user_id_slug = f"_{user_data.get('id')}" if (user_data and user_data.get("id")) else ""
+                st.download_button(
+                    label="📥 Gerar e Baixar Relatório (PDF)",
+                    data=pdf_bytes,
+                    file_name=f"relatorio_desempenho{user_id_slug}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True,
+                    key="btn_download_relatorio_dash",
+                )
+            except Exception as e:
+                st.error(f"Erro ao preparar relatório de desempenho: {e}")
 
 elif menu_option == "Disciplinas":
     st.subheader("📚 Minhas Disciplinas")
