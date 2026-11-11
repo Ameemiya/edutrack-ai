@@ -21,34 +21,54 @@ def resolve_auth_token(
     """
     Resolves auth token in order:
     1. Direct argument token
-    2. Environment variables (XANO_AUTH_TOKEN, AUTH_TOKEN)
-    3. Login via provided email & password or env credentials (XANO_USER_EMAIL, XANO_USER_PASSWORD)
-    4. Streamlit session_state if running within Streamlit
+    2. Streamlit session_state or st.secrets if running within Streamlit
+    3. Environment variables (XANO_AUTH_TOKEN, AUTH_TOKEN)
+    4. Login via provided email & password or secrets/env credentials (XANO_USER_EMAIL, XANO_USER_PASSWORD)
     """
     if token:
         return token
 
+    # Check Streamlit runtime session / secrets
+    if subject_service.st is not None and subject_service._st_runtime_exists():
+        try:
+            sess_token = subject_service.st.session_state.get("auth_token")
+            if sess_token:
+                return sess_token
+            if hasattr(subject_service.st, "secrets"):
+                sec_token = subject_service.st.secrets.get("XANO_AUTH_TOKEN") or subject_service.st.secrets.get("AUTH_TOKEN")
+                if sec_token:
+                    return sec_token
+        except Exception:
+            pass
+
     # Check env variables
+    env_token = os.environ.get("XANO_AUTH_TOKEN") or os.environ.get("AUTH_TOKEN")
+    if env_token:
+        return env_token
+
     subject_service._load_env_file()
     env_token = os.environ.get("XANO_AUTH_TOKEN") or os.environ.get("AUTH_TOKEN")
     if env_token:
         return env_token
 
-    # Check email/password credentials to auto-login
-    user_email = email or os.environ.get("XANO_USER_EMAIL")
-    user_password = password or os.environ.get("XANO_USER_PASSWORD")
+    # Check email/password credentials to auto-login (checking st.secrets then os.environ)
+    user_email = email
+    user_password = password
+    if subject_service.st is not None and subject_service._st_runtime_exists():
+        try:
+            if hasattr(subject_service.st, "secrets"):
+                user_email = user_email or subject_service.st.secrets.get("XANO_USER_EMAIL")
+                user_password = user_password or subject_service.st.secrets.get("XANO_USER_PASSWORD")
+        except Exception:
+            pass
+
+    user_email = user_email or os.environ.get("XANO_USER_EMAIL")
+    user_password = user_password or os.environ.get("XANO_USER_PASSWORD")
 
     if user_email and user_password:
         ok, res = auth_service.login(user_email, user_password)
         if ok and isinstance(res, dict) and "authToken" in res:
             return res["authToken"]
-
-    # Check Streamlit runtime session
-    if subject_service.st is not None and subject_service._st_runtime_exists():
-        try:
-            return subject_service.st.session_state.get("auth_token")
-        except Exception:
-            pass
 
     return None
 

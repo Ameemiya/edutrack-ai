@@ -6,7 +6,7 @@ st.set_page_config(page_title="Perfil e Autenticação", page_icon="👤", layou
 
 st.title("👤 Perfil do Usuário")
 
-# Informações da URL de conexão configurada no .env
+# Informações da URL de conexão configurada em secrets/ambiente
 auth_api_url = auth_service.get_auth_api_url()
 
 # Verifica se o usuário já possui um token na sessão

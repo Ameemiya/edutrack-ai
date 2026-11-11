@@ -30,20 +30,25 @@ def _load_env_file() -> None:
 
 
 def get_auth_api_url() -> str:
-    """Obtém a URL base dos endpoints de autenticação a partir de .env, os.environ ou st.secrets."""
-    _load_env_file()
-    
-    url = os.environ.get("XANO_AUTH_API_URL") or os.environ.get("XANO_API_URL")
-    if not url and st is not None and _st_runtime_exists():
+    """Obtém a URL base dos endpoints de autenticação priorizando st.secrets com fallback para os.environ."""
+    url = None
+    if st is not None and _st_runtime_exists():
         try:
             if hasattr(st, "secrets"):
                 url = st.secrets.get("XANO_AUTH_API_URL") or st.secrets.get("XANO_API_URL")
         except Exception:
             pass
-            
+
+    if not url:
+        url = os.environ.get("XANO_AUTH_API_URL") or os.environ.get("XANO_API_URL")
+
+    if not url:
+        _load_env_file()
+        url = os.environ.get("XANO_AUTH_API_URL") or os.environ.get("XANO_API_URL")
+
     if not url:
         url = "https://x8ki-letl-twmt.n7.xano.io/api:Authentication"
-        
+
     return url.rstrip("/")
 
 

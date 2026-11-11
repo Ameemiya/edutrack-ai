@@ -52,34 +52,48 @@ def _load_env_file() -> None:
 
 
 def _get_api_url() -> str:
-    """Retrieve the Xano API base URL for subjects."""
-    _load_env_file()
-    url = os.environ.get("XANO_SUBJECTS_API_URL") or os.environ.get("XANO_API_URL")
-    if not url and st is not None and _st_runtime_exists():
+    """Retrieve the Xano API base URL for subjects prioritizing st.secrets with os.environ fallback."""
+    url = None
+    if st is not None and _st_runtime_exists():
         try:
             if hasattr(st, "secrets"):
                 url = st.secrets.get("XANO_SUBJECTS_API_URL") or st.secrets.get("XANO_API_URL")
         except Exception:
             pass
+
+    if not url:
+        url = os.environ.get("XANO_SUBJECTS_API_URL") or os.environ.get("XANO_API_URL")
+
+    if not url:
+        _load_env_file()
+        url = os.environ.get("XANO_SUBJECTS_API_URL") or os.environ.get("XANO_API_URL")
+
     if not url:
         url = "https://x8ki-letl-twmt.n7.xano.io/api:4ZzBuB4S"
     return url.rstrip("/")
 
 
 def _get_auth_token(token: Optional[str] = None) -> Optional[str]:
-    """Retrieve auth token from argument or session state."""
+    """Retrieve auth token prioritizing direct arg, st.session_state, st.secrets, then os.environ."""
     if token:
         return token
-    _load_env_file()
+    if st is not None and _st_runtime_exists():
+        try:
+            if "auth_token" in st.session_state and st.session_state.auth_token:
+                return st.session_state.auth_token
+            if hasattr(st, "secrets"):
+                sec_token = st.secrets.get("XANO_AUTH_TOKEN") or st.secrets.get("AUTH_TOKEN")
+                if sec_token:
+                    return sec_token
+        except Exception:
+            pass
+
     env_token = os.environ.get("XANO_AUTH_TOKEN") or os.environ.get("AUTH_TOKEN")
     if env_token:
         return env_token
-    if st is not None and _st_runtime_exists():
-        try:
-            return st.session_state.get("auth_token")
-        except Exception:
-            pass
-    return None
+
+    _load_env_file()
+    return os.environ.get("XANO_AUTH_TOKEN") or os.environ.get("AUTH_TOKEN")
 
 
 def _get_local_store() -> List[Dict[str, Any]]:

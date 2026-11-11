@@ -32,15 +32,22 @@ def _load_env_file() -> None:
 
 
 def get_reports_api_url() -> str:
-    """Retorna a URL base do endpoint de relatórios no Xano."""
-    _load_env_file()
-    url = os.environ.get("XANO_REPORTS_API_URL") or os.environ.get("XANO_API_URL")
-    if not url and st is not None and _st_runtime_exists():
+    """Retorna a URL base do endpoint de relatórios no Xano priorizando st.secrets com fallback para os.environ."""
+    url = None
+    if st is not None and _st_runtime_exists():
         try:
             if hasattr(st, "secrets"):
                 url = st.secrets.get("XANO_REPORTS_API_URL") or st.secrets.get("XANO_API_URL")
         except Exception:
             pass
+
+    if not url:
+        url = os.environ.get("XANO_REPORTS_API_URL") or os.environ.get("XANO_API_URL")
+
+    if not url:
+        _load_env_file()
+        url = os.environ.get("XANO_REPORTS_API_URL") or os.environ.get("XANO_API_URL")
+
     if not url:
         url = "https://x8ki-letl-twmt.n7.xano.io/api:VFzwkOgb"
     return url.rstrip("/")
