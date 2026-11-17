@@ -3,6 +3,8 @@ from services import subject_service
 from services import task_service
 from services import auth_service
 from services import report_service
+from components.sidebar_profile import render_sidebar_profile
+from scripts.calculate_progress import calculate_all_subjects_progress, calculate_subject_progress
 
 # Configuração da Página
 st.set_page_config(page_title="EduTrack AI", page_icon="🎓", layout="wide")
@@ -18,13 +20,6 @@ st.sidebar.header("Menu")
 menu_option = st.sidebar.radio("Navegar", ["Dashboard", "Disciplinas", "Tarefas"])
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("**Acesso Rápido:**")
-try:
-    st.sidebar.page_link("pages/1_📚_Disciplinas.py", label="Gestão de Disciplinas", icon="📚")
-    st.sidebar.page_link("pages/2_📝_Tarefas.py", label="Gestão de Tarefas", icon="📝")
-    st.sidebar.page_link("pages/3_👤_Perfil.py", label="Meu Perfil / Login", icon="👤")
-except Exception:
-    pass
 
 # Status de Conexão na Sidebar
 if auth_token:
@@ -33,6 +28,9 @@ if auth_token:
         st.rerun()
 else:
     st.sidebar.warning("⚠️ Não conectado")
+
+# Botão de Perfil Flutuante estilo Discord
+render_sidebar_profile()
 
 # Mapeamento visual de status de tarefas
 STATUS_CONFIG = {
@@ -62,9 +60,16 @@ if menu_option == "Dashboard":
         with st.spinner("Carregando informações do Xano..."):
             success_subj, subjects = subject_service.fetch_subjects(auth_token)
             success_tasks, tasks = task_service.fetch_tasks(auth_token)
+            progress_data = calculate_all_subjects_progress(auth_token=auth_token)
 
         subjects_list = subjects if success_subj and isinstance(subjects, list) else []
         tasks_list = tasks if success_tasks and isinstance(tasks, list) else []
+        subject_map = {s["id"]: s.get("name", "Sem Nome") for s in subjects_list if "id" in s}
+
+        progress_by_subj = {}
+        if isinstance(progress_data, dict) and progress_data.get("status") == "success":
+            subj_list = progress_data.get("subjects") or progress_data.get("subjects_progress") or []
+            progress_by_subj = {p["subject_id"]: p for p in subj_list if "subject_id" in p}
 
         # Contagens reais
         total_subjects = len(subjects_list)
@@ -88,10 +93,48 @@ if menu_option == "Dashboard":
         with col_resumo_disc:
             st.subheader("📚 Suas Disciplinas")
             if subjects_list:
+                # Indicadores consolidados de progresso total antes das disciplinas cadastradas
+                total_hours = sum(
+                    int(s.get("hours")) for s in subjects_list
+                    if s.get("hours") is not None and str(s.get("hours")).isdigit()
+                )
+                tot_tasks_all = progress_data.get("total_tasks") if isinstance(progress_data, dict) and "total_tasks" in progress_data else len(tasks_list)
+                comp_tasks_all = progress_data.get("total_completed_tasks") if isinstance(progress_data, dict) and "total_completed_tasks" in progress_data else completed_tasks
+                overall_pct = progress_data.get("overall_progress_percentage") if isinstance(progress_data, dict) and "overall_progress_percentage" in progress_data else None
+                if overall_pct is None:
+                    overall_pct = round((comp_tasks_all / tot_tasks_all) * 100.0, 1) if tot_tasks_all and tot_tasks_all > 0 else 0.0
+
+                col_tot1, col_tot2, col_tot3 = st.columns(3)
+                col_tot1.metric("Progresso Total", f"{overall_pct}%")
+                col_tot2.metric("Tarefas Concluídas", f"{comp_tasks_all} / {tot_tasks_all}")
+                col_tot3.metric("Carga Horária Total", f"{total_hours} horas")
+                st.progress(min(float(overall_pct) / 100.0, 1.0))
+                st.markdown("---")
+
                 for s in subjects_list[:5]:
+                    sub_id = s.get("id")
+                    p_info = progress_by_subj.get(sub_id)
+                    if not p_info:
+                        sub_tasks = [t for t in tasks_list if t.get("subject_id") == sub_id]
+                        tot = len(sub_tasks)
+                        comp = sum(1 for t in sub_tasks if t.get("status") == "completed")
+                        p_info = {
+                            "progress_percentage": round((comp / tot) * 100.0, 1) if tot > 0 else 0.0,
+                            "completed_tasks": comp,
+                            "total_tasks": tot,
+                        }
+
+                    pct = p_info.get("progress_percentage", 0.0)
+                    completed = p_info.get("completed_tasks", 0)
+                    total = p_info.get("total_tasks", 0)
+
                     prof = s.get("teacher") or s.get("professor") or "Não informado"
-                    hours = f"{s.get('hours')}h" if s.get("hours") else ""
-                    st.markdown(f"- **{s.get('name', 'Sem Nome')}** — {prof} {f'({hours})' if hours else ''}")
+                    hours_val = s.get("hours")
+                    hours_str = f" — ⏱️ {hours_val} horas" if hours_val else ""
+                    st.markdown(f"**{s.get('name', 'Sem Nome')}**")
+                    st.markdown(f"👨‍🏫 {prof}{hours_str}")
+                    st.progress(min(pct / 100.0, 1.0))
+                    st.caption(f"Progresso: **{pct}%** ({completed}/{total})")
                 if len(subjects_list) > 5:
                     st.caption(f"E mais {len(subjects_list) - 5} disciplina(s)...")
             else:
@@ -104,14 +147,33 @@ if menu_option == "Dashboard":
 
         with col_resumo_tarefas:
             st.subheader("📝 Tarefas Pendentes Recentes")
-            tarefas_abertas = [t for t in tasks_list if t.get("status") != "completed"]
+            tarefas_abertas = [t for t in tasks_list if t.get("status") in ("pending", "in_progress") or t.get("status") != "completed"]
             if tarefas_abertas:
-                for t in tarefas_abertas[:5]:
-                    due = f" (Prazo: {str(t.get('due_date'))[:10]})" if t.get("due_date") else ""
-                    badge = STATUS_CONFIG.get(t.get("status"), "📌")
-                    st.markdown(f"- {badge} **{t.get('title', 'Sem Título')}**{due}")
-                if len(tarefas_abertas) > 5:
-                    st.caption(f"E mais {len(tarefas_abertas) - 5} tarefa(s) pendente(s)...")
+                # Agrupamento de tarefas pendentes e em andamento por disciplina
+                tasks_by_subject = {}
+                for t in tarefas_abertas:
+                    sub_id = t.get("subject_id")
+                    sub_name = subject_map.get(sub_id) if sub_id else "Sem disciplina vinculada"
+                    if sub_name not in tasks_by_subject:
+                        tasks_by_subject[sub_name] = []
+                    tasks_by_subject[sub_name].append(t)
+
+                for disc_name, group_tasks in tasks_by_subject.items():
+                    st.markdown(f"##### 📚 {disc_name}")
+                    for t in group_tasks:
+                        badge = STATUS_CONFIG.get(t.get("status"), "📌")
+                        st.markdown(f"**{badge} {t.get('title', 'Sem Título')}**")
+
+                        due_val = str(t.get("due_date"))[:10] if t.get("due_date") else None
+                        if due_val:
+                            st.markdown(
+                                f'<div style="font-size: 0.875rem; margin-top: -6px; margin-bottom: 10px; margin-left: 2px;">'
+                                f'<span style="opacity: 1; filter: none;">📅</span> <span style="opacity: 0.75;">Prazo: {due_val}</span>'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+                        else:
+                            st.write("")
             else:
                 st.info("🎉 Nenhuma tarefa pendente no momento!")
 
@@ -159,21 +221,60 @@ elif menu_option == "Disciplinas":
         except Exception:
             pass
     else:
-        with st.spinner("Carregando disciplinas do Xano..."):
+        with st.spinner("Carregando disciplinas e progresso do Xano..."):
             success, result = subject_service.fetch_subjects(auth_token)
+            progress_res = calculate_all_subjects_progress(auth_token=auth_token)
+
+        prog_map = {}
+        if isinstance(progress_res, dict) and progress_res.get("status") == "success":
+            subj_list = progress_res.get("subjects") or progress_res.get("subjects_progress") or []
+            prog_map = {p["subject_id"]: p for p in subj_list if "subject_id" in p}
 
         if success:
             if isinstance(result, list) and len(result) > 0:
                 st.write(f"Você possui **{len(result)}** disciplina(s) cadastrada(s):")
                 table_data = []
                 for s in result:
+                    sub_id = s.get("id")
+                    p_info = prog_map.get(sub_id)
+                    if not p_info:
+                        single = calculate_subject_progress(sub_id, auth_token=auth_token)
+                        p_info = single if isinstance(single, dict) and single.get("status") == "success" else {}
+
+                    pct = p_info.get("progress_percentage", 0.0)
+                    comp_tasks = p_info.get("completed_tasks", 0)
+                    tot_tasks = p_info.get("total_tasks", 0)
+
                     table_data.append({
-                        "ID": s.get("id"),
+                        "ID": sub_id,
                         "Disciplina": s.get("name", "N/D"),
                         "Professor": s.get("teacher") or s.get("professor") or "Não informado",
                         "Carga Horária (h)": s.get("hours") or "-",
+                        "Progresso (%)": f"{pct}%",
+                        "Tarefas Concluídas / Total": f"{comp_tasks} / {tot_tasks}",
                     })
                 st.dataframe(table_data, use_container_width=True)
+
+                st.markdown("---")
+                st.subheader("📊 Progresso das Disciplinas")
+                for s in result:
+                    sub_id = s.get("id")
+                    p_info = prog_map.get(sub_id)
+                    if not p_info:
+                        single = calculate_subject_progress(sub_id, auth_token=auth_token)
+                        p_info = single if isinstance(single, dict) and single.get("status") == "success" else {}
+
+                    pct = p_info.get("progress_percentage", 0.0)
+                    comp_tasks = p_info.get("completed_tasks", 0)
+                    tot_tasks = p_info.get("total_tasks", 0)
+
+                    prof = s.get("teacher") or s.get("professor") or "Não informado"
+                    hours_val = s.get("hours")
+                    hours_str = f" — ⏱️ {hours_val} horas" if hours_val else ""
+                    st.markdown(f"**{s.get('name', 'Sem Nome')}**")
+                    st.markdown(f"👨‍🏫 {prof}{hours_str}")
+                    st.progress(min(pct / 100.0, 1.0))
+                    st.caption(f"Progresso: **{pct}%** ({comp_tasks}/{tot_tasks})")
             else:
                 st.info("Nenhuma disciplina cadastrada no momento.")
 

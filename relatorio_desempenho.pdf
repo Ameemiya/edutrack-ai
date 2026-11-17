@@ -9,7 +9,7 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
 endobj
 4 0 obj
-<< /Length 6741 >>
+<< /Length 5635 >>
 stream
 q
 0.18 0.25 0.45 rg
@@ -52,7 +52,7 @@ q
 BT
 /F2 10.5 Tf
 55.00 703.00 Td
-(Aluno\(a\): Teste Tesste) Tj
+(Aluno\(a\): aio3) Tj
 ET
 Q
 q
@@ -60,7 +60,7 @@ q
 BT
 /F1 9 Tf
 55.00 688.00 Td
-(E-mail: teste@teste.com) Tj
+(E-mail: aio3@gmail.com) Tj
 ET
 Q
 q
@@ -68,7 +68,7 @@ q
 BT
 /F2 9.5 Tf
 360.00 703.00 Td
-(Matr\355cula / ID: 1) Tj
+(Matr\355cula / ID: 5) Tj
 ET
 Q
 q
@@ -76,7 +76,7 @@ q
 BT
 /F1 9 Tf
 360.00 688.00 Td
-(Data de Emiss\343o: 11/11/2026 10:26) Tj
+(Data de Emiss\343o: 17/11/2026 10:33) Tj
 ET
 Q
 q
@@ -114,7 +114,7 @@ q
 BT
 /F2 12 Tf
 48.00 599.00 Td
-(2) Tj
+(1) Tj
 ET
 Q
 q
@@ -137,7 +137,7 @@ q
 BT
 /F2 12 Tf
 152.00 599.00 Td
-(7) Tj
+(5) Tj
 ET
 Q
 q
@@ -160,7 +160,7 @@ q
 BT
 /F2 12 Tf
 256.00 599.00 Td
-(4) Tj
+(1) Tj
 ET
 Q
 q
@@ -183,7 +183,7 @@ q
 BT
 /F2 12 Tf
 360.00 599.00 Td
-(3) Tj
+(4) Tj
 ET
 Q
 q
@@ -206,7 +206,7 @@ q
 BT
 /F2 12 Tf
 464.00 599.00 Td
-(57.1%) Tj
+(20.0%) Tj
 ET
 Q
 q
@@ -224,15 +224,15 @@ f
 Q
 q
 0.20 0.60 0.35 rg
-40.00 550.00 294.27 12.00 re
+40.00 550.00 103.00 12.00 re
 f
 Q
 q
-0.15 0.40 0.70 rg
+0.75 0.35 0.10 rg
 BT
 /F2 9 Tf
 40.00 532.00 Td
-(Diagn\363stico: Desempenho Regular - Bom andamento e entregas em dia) Tj
+(Diagn\363stico: Aten\347\343o Recomendada - Volume significativo de tarefas pendentes) Tj
 ET
 Q
 q
@@ -299,7 +299,7 @@ q
 BT
 /F1 9 Tf
 50.00 465.00 Td
-(Python) Tj
+(Innovation Lab) Tj
 ET
 Q
 q
@@ -307,7 +307,7 @@ q
 BT
 /F1 8.5 Tf
 215.00 465.00 Td
-(Prof Kim \(80h\)) Tj
+(Vitor \(70h\)) Tj
 ET
 Q
 q
@@ -327,69 +327,30 @@ BT
 ET
 Q
 q
-0.90 0.90 0.90 RG
-0.50 w
-40.00 461.00 m
-555.00 461.00 l
-S
-Q
-q
-0.10 0.10 0.10 rg
-BT
-/F1 9 Tf
-50.00 449.00 Td
-(Innovation Lab) Tj
-ET
-Q
-q
-0.35 0.35 0.35 rg
-BT
-/F1 8.5 Tf
-215.00 449.00 Td
-(Prof Vitor \(60h\)) Tj
-ET
-Q
-q
-0.10 0.10 0.10 rg
-BT
-/F1 9 Tf
-395.00 449.00 Td
-(3 / 4) Tj
-ET
-Q
-q
-0.15 0.45 0.25 rg
-BT
-/F2 9 Tf
-485.00 449.00 Td
-(75.0%) Tj
-ET
-Q
-q
 0.15 0.20 0.30 rg
 BT
 /F2 11 Tf
-40.00 419.00 Td
+40.00 435.00 Td
 (LISTAGEM GERAL DE TAREFAS ACAD\312MICAS) Tj
 ET
 Q
 q
 0.80 0.82 0.85 RG
 1.00 w
-40.00 411.00 m
-555.00 411.00 l
+40.00 427.00 m
+555.00 427.00 l
 S
 Q
 q
 0.92 0.94 0.97 rg
-40.00 393.00 515.00 18.00 re
+40.00 409.00 515.00 18.00 re
 f
 Q
 q
 0.20 0.25 0.35 rg
 BT
 /F2 9 Tf
-50.00 398.00 Td
+50.00 414.00 Td
 (T\355tulo da Tarefa) Tj
 ET
 Q
@@ -397,7 +358,7 @@ q
 0.20 0.25 0.35 rg
 BT
 /F2 9 Tf
-260.00 398.00 Td
+260.00 414.00 Td
 (Disciplina) Tj
 ET
 Q
@@ -405,7 +366,7 @@ q
 0.20 0.25 0.35 rg
 BT
 /F2 9 Tf
-380.00 398.00 Td
+380.00 414.00 Td
 (Prazo) Tj
 ET
 Q
@@ -413,116 +374,38 @@ q
 0.20 0.25 0.35 rg
 BT
 /F2 9 Tf
-470.00 398.00 Td
+470.00 414.00 Td
 (Status) Tj
 ET
 Q
 q
 0.90 0.90 0.90 RG
 0.50 w
-40.00 391.00 m
-555.00 391.00 l
+40.00 407.00 m
+555.00 407.00 l
 S
 Q
 q
 0.10 0.10 0.10 rg
 BT
 /F1 8.5 Tf
-50.00 379.00 Td
-(Estrutura WHile) Tj
+50.00 395.00 Td
+(A1) Tj
 ET
 Q
 q
 0.35 0.35 0.35 rg
 BT
 /F1 8.5 Tf
-260.00 379.00 Td
-(Python) Tj
+260.00 395.00 Td
+(Innovation Lab) Tj
 ET
 Q
 q
 0.30 0.30 0.30 rg
 BT
 /F1 8.5 Tf
-380.00 379.00 Td
-(2026-11-05) Tj
-ET
-Q
-q
-0.10 0.50 0.20 rg
-BT
-/F2 8.5 Tf
-470.00 379.00 Td
-(Conclu\355da) Tj
-ET
-Q
-q
-0.90 0.90 0.90 RG
-0.50 w
-40.00 376.00 m
-555.00 376.00 l
-S
-Q
-q
-0.10 0.10 0.10 rg
-BT
-/F1 8.5 Tf
-50.00 364.00 Td
-(\301rvore Bin\341ria) Tj
-ET
-Q
-q
-0.35 0.35 0.35 rg
-BT
-/F1 8.5 Tf
-260.00 364.00 Td
-(Python) Tj
-ET
-Q
-q
-0.30 0.30 0.30 rg
-BT
-/F1 8.5 Tf
-380.00 364.00 Td
-(2026-11-11) Tj
-ET
-Q
-q
-0.80 0.50 0.10 rg
-BT
-/F2 8.5 Tf
-470.00 364.00 Td
-(Em Andamento) Tj
-ET
-Q
-q
-0.90 0.90 0.90 RG
-0.50 w
-40.00 361.00 m
-555.00 361.00 l
-S
-Q
-q
-0.10 0.10 0.10 rg
-BT
-/F1 8.5 Tf
-50.00 349.00 Td
-(Dicion\341rio) Tj
-ET
-Q
-q
-0.35 0.35 0.35 rg
-BT
-/F1 8.5 Tf
-260.00 349.00 Td
-(Python) Tj
-ET
-Q
-q
-0.30 0.30 0.30 rg
-BT
-/F1 8.5 Tf
-380.00 349.00 Td
+380.00 395.00 Td
 (2026-11-18) Tj
 ET
 Q
@@ -530,30 +413,30 @@ q
 0.40 0.40 0.40 rg
 BT
 /F2 8.5 Tf
-470.00 349.00 Td
+470.00 395.00 Td
 (Pendente) Tj
 ET
 Q
 q
 0.90 0.90 0.90 RG
 0.50 w
-40.00 346.00 m
-555.00 346.00 l
+40.00 392.00 m
+555.00 392.00 l
 S
 Q
 q
 0.10 0.10 0.10 rg
 BT
 /F1 8.5 Tf
-50.00 334.00 Td
-(Atividade 13) Tj
+50.00 380.00 Td
+(A3) Tj
 ET
 Q
 q
 0.35 0.35 0.35 rg
 BT
 /F1 8.5 Tf
-260.00 334.00 Td
+260.00 380.00 Td
 (Innovation Lab) Tj
 ET
 Q
@@ -561,133 +444,133 @@ q
 0.30 0.30 0.30 rg
 BT
 /F1 8.5 Tf
-380.00 334.00 Td
-(2026-11-07) Tj
+380.00 380.00 Td
+(2026-11-17) Tj
 ET
 Q
 q
 0.10 0.50 0.20 rg
 BT
 /F2 8.5 Tf
-470.00 334.00 Td
+470.00 380.00 Td
 (Conclu\355da) Tj
 ET
 Q
 q
 0.90 0.90 0.90 RG
 0.50 w
-40.00 331.00 m
-555.00 331.00 l
+40.00 377.00 m
+555.00 377.00 l
 S
 Q
 q
 0.10 0.10 0.10 rg
 BT
 /F1 8.5 Tf
-50.00 319.00 Td
-(Atividade 14) Tj
+50.00 365.00 Td
+(A2) Tj
 ET
 Q
 q
 0.35 0.35 0.35 rg
 BT
 /F1 8.5 Tf
-260.00 319.00 Td
-(Innovation Lab) Tj
+260.00 365.00 Td
+(Geral) Tj
 ET
 Q
 q
 0.30 0.30 0.30 rg
 BT
 /F1 8.5 Tf
-380.00 319.00 Td
-(2026-11-08) Tj
-ET
-Q
-q
-0.10 0.50 0.20 rg
-BT
-/F2 8.5 Tf
-470.00 319.00 Td
-(Conclu\355da) Tj
-ET
-Q
-q
-0.90 0.90 0.90 RG
-0.50 w
-40.00 316.00 m
-555.00 316.00 l
-S
-Q
-q
-0.10 0.10 0.10 rg
-BT
-/F1 8.5 Tf
-50.00 304.00 Td
-(Atividade 15) Tj
-ET
-Q
-q
-0.35 0.35 0.35 rg
-BT
-/F1 8.5 Tf
-260.00 304.00 Td
-(Innovation Lab) Tj
-ET
-Q
-q
-0.30 0.30 0.30 rg
-BT
-/F1 8.5 Tf
-380.00 304.00 Td
-(2026-11-08) Tj
-ET
-Q
-q
-0.10 0.50 0.20 rg
-BT
-/F2 8.5 Tf
-470.00 304.00 Td
-(Conclu\355da) Tj
-ET
-Q
-q
-0.90 0.90 0.90 RG
-0.50 w
-40.00 301.00 m
-555.00 301.00 l
-S
-Q
-q
-0.10 0.10 0.10 rg
-BT
-/F1 8.5 Tf
-50.00 289.00 Td
-(Atividade 16) Tj
-ET
-Q
-q
-0.35 0.35 0.35 rg
-BT
-/F1 8.5 Tf
-260.00 289.00 Td
-(Innovation Lab) Tj
-ET
-Q
-q
-0.30 0.30 0.30 rg
-BT
-/F1 8.5 Tf
-380.00 289.00 Td
-(2026-11-11) Tj
+380.00 365.00 Td
+(2026-11-19) Tj
 ET
 Q
 q
 0.40 0.40 0.40 rg
 BT
 /F2 8.5 Tf
-470.00 289.00 Td
+470.00 365.00 Td
 (Pendente) Tj
+ET
+Q
+q
+0.90 0.90 0.90 RG
+0.50 w
+40.00 362.00 m
+555.00 362.00 l
+S
+Q
+q
+0.10 0.10 0.10 rg
+BT
+/F1 8.5 Tf
+50.00 350.00 Td
+(A4) Tj
+ET
+Q
+q
+0.35 0.35 0.35 rg
+BT
+/F1 8.5 Tf
+260.00 350.00 Td
+(Innovation Lab) Tj
+ET
+Q
+q
+0.30 0.30 0.30 rg
+BT
+/F1 8.5 Tf
+380.00 350.00 Td
+(2026-11-20) Tj
+ET
+Q
+q
+0.40 0.40 0.40 rg
+BT
+/F2 8.5 Tf
+470.00 350.00 Td
+(Pendente) Tj
+ET
+Q
+q
+0.90 0.90 0.90 RG
+0.50 w
+40.00 347.00 m
+555.00 347.00 l
+S
+Q
+q
+0.10 0.10 0.10 rg
+BT
+/F1 8.5 Tf
+50.00 335.00 Td
+(A6) Tj
+ET
+Q
+q
+0.35 0.35 0.35 rg
+BT
+/F1 8.5 Tf
+260.00 335.00 Td
+(Geral) Tj
+ET
+Q
+q
+0.30 0.30 0.30 rg
+BT
+/F1 8.5 Tf
+380.00 335.00 Td
+(2026-11-19) Tj
+ET
+Q
+q
+0.80 0.50 0.10 rg
+BT
+/F2 8.5 Tf
+470.00 335.00 Td
+(Em Andamento) Tj
 ET
 Q
 q
@@ -728,10 +611,10 @@ xref
 0000000058 00000 n 
 0000000115 00000 n 
 0000000257 00000 n 
-0000007050 00000 n 
-0000007147 00000 n 
+0000005944 00000 n 
+0000006041 00000 n 
 trailer
 << /Size 7 /Root 1 0 R >>
 startxref
-7249
+6143
 %%EOF

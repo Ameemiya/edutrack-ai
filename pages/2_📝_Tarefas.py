@@ -3,8 +3,12 @@ import streamlit as st
 from services import task_service
 from services import subject_service
 from services import auth_service
+from components.sidebar_profile import render_sidebar_profile
 
 st.set_page_config(page_title="Minhas Tarefas", page_icon="📝", layout="wide")
+
+# Botão de Perfil Flutuante estilo Discord
+render_sidebar_profile()
 
 st.title("📝 Minhas Tarefas")
 

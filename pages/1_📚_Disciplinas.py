@@ -3,8 +3,12 @@ from services import subject_service
 from services import auth_service
 from services import report_service
 from scripts.calculate_progress import calculate_subject_progress, calculate_all_subjects_progress
+from components.sidebar_profile import render_sidebar_profile
 
 st.set_page_config(page_title="Disciplinas", page_icon="📚", layout="wide")
+
+# Botão de Perfil Flutuante estilo Discord
+render_sidebar_profile()
 
 st.title("📚 Gestão de Disciplinas")
 
@@ -20,47 +24,53 @@ with tab_lista:
         st.warning("⚠️ Você precisa estar conectado para visualizar suas disciplinas.")
         st.info("Acesse a página **👤 Perfil** no menu lateral para fazer login ou criar sua conta.")
     else:
-        with st.spinner("Carregando disciplinas do Xano..."):
+        with st.spinner("Carregando disciplinas e progresso do Xano..."):
             success, result = subject_service.fetch_subjects(auth_token)
+            gen_data = calculate_all_subjects_progress(auth_token=auth_token)
+
+        prog_map = {}
+        if isinstance(gen_data, dict) and gen_data.get("status") == "success":
+            sub_list = gen_data.get("subjects") or gen_data.get("subjects_progress") or []
+            prog_map = {p["subject_id"]: p for p in sub_list if "subject_id" in p}
 
         if success:
             if isinstance(result, list) and len(result) > 0:
-                # Painel de monitoramento consolidado via calculate_progress.py
-                with st.expander("📊 Monitoramento Geral de Progresso (calculate_progress.py)", expanded=False):
-                    with st.spinner("Calculando progresso das disciplinas no Xano..."):
-                        gen_data = calculate_all_subjects_progress(auth_token=auth_token)
+                # Indicadores gerais de progresso exibidos diretamente
+                if gen_data.get("status") == "success":
+                    total_hours_all = sum(
+                        int(item.get("hours")) for item in result
+                        if item.get("hours") is not None and str(item.get("hours")).isdigit()
+                    )
+                    c_g1, c_g2, c_g3, c_g4 = st.columns(4)
+                    c_g1.metric("Progresso Geral", f"{gen_data.get('overall_progress_percentage', 0.0)}%")
+                    c_g2.metric("Disciplinas Monitoradas", gen_data.get("total_subjects", 0))
+                    c_g3.metric("Tarefas (Concluídas / Total)", f"{gen_data.get('total_completed_tasks', 0)} / {gen_data.get('total_tasks', 0)}")
+                    c_g4.metric("Carga Horária Total", f"{total_hours_all} horas")
+                    st.progress(min(gen_data.get("overall_progress_percentage", 0.0) / 100.0, 1.0))
 
-                    if gen_data.get("status") == "success":
-                        c_g1, c_g2, c_g3 = st.columns(3)
-                        c_g1.metric("Progresso Geral", f"{gen_data.get('overall_progress_percentage', 0.0)}%")
-                        c_g2.metric("Disciplinas Monitoradas", gen_data.get("total_subjects", 0))
-                        c_g3.metric("Tarefas (Concluídas / Total)", f"{gen_data.get('total_completed_tasks', 0)} / {gen_data.get('total_tasks', 0)}")
-                        st.progress(min(gen_data.get("overall_progress_percentage", 0.0) / 100.0, 1.0))
+                    st.markdown("---")
+                    st.markdown("**Exportar Relatório Acadêmico (PDF):**")
+                    try:
+                        user_info = st.session_state.get("user")
+                        pdf_bytes_disc = report_service.generate_student_pdf_report(
+                            auth_token=auth_token,
+                            user_data=user_info,
+                            subjects=result if isinstance(result, list) else None,
+                        )
+                        user_id_slug = f"_{user_info.get('id')}" if (user_info and user_info.get("id")) else ""
+                        st.download_button(
+                            label="📥 Gerar e Baixar Relatório (PDF)",
+                            data=pdf_bytes_disc,
+                            file_name=f"relatorio_desempenho{user_id_slug}.pdf",
+                            mime="application/pdf",
+                            type="primary",
+                            use_container_width=True,
+                            key="btn_download_pdf_disc_single",
+                        )
+                    except Exception as e:
+                        st.error(f"Erro ao preparar relatório de desempenho: {e}")
 
-                        with st.expander("📄 Ver JSON Consolidado"):
-                            st.json(gen_data)
-
-                        st.markdown("---")
-                        st.markdown("**Exportar Relatório Acadêmico (PDF):**")
-                        try:
-                            user_info = st.session_state.get("user")
-                            pdf_bytes_disc = report_service.generate_student_pdf_report(
-                                auth_token=auth_token,
-                                user_data=user_info,
-                                subjects=result if isinstance(result, list) else None,
-                            )
-                            user_id_slug = f"_{user_info.get('id')}" if (user_info and user_info.get("id")) else ""
-                            st.download_button(
-                                label="📥 Gerar e Baixar Relatório (PDF)",
-                                data=pdf_bytes_disc,
-                                file_name=f"relatorio_desempenho{user_id_slug}.pdf",
-                                mime="application/pdf",
-                                type="primary",
-                                use_container_width=True,
-                                key="btn_download_pdf_disc_single",
-                            )
-                        except Exception as e:
-                            st.error(f"Erro ao preparar relatório de desempenho: {e}")
+                    st.markdown("---")
 
                 st.write(f"Exibindo **{len(result)}** disciplina(s):")
 
@@ -68,50 +78,38 @@ with tab_lista:
                     subject_id = item.get("id")
                     subject_name = item.get("name", "Sem Nome")
                     teacher = item.get("teacher") or item.get("professor") or "Não informado"
-                    hours = item.get("hours") or "-"
+                    hours_val = item.get("hours")
+                    hours_str = f"⏱️ {hours_val} horas" if (hours_val and str(hours_val).isdigit()) else ("⏱️ " + str(hours_val) if hours_val else "⏱️ Carga horária não informada")
 
-                    with st.expander(f"📚 {subject_name} — Professor(a): {teacher}", expanded=False):
-                        st.markdown(f"**Carga Horária:** {hours}h")
-                        st.caption(f"ID: {subject_id} | Criado em: {item.get('created_at', '-')}")
+                    p_info = prog_map.get(subject_id)
+                    if not p_info:
+                        single = calculate_subject_progress(subject_id, auth_token=auth_token)
+                        p_info = single if isinstance(single, dict) and single.get("status") == "success" else {}
 
-                        # Botões de ação com ícone para monitorar progresso
-                        col_prog, col_edit, col_del = st.columns([1, 1, 1])
+                    pct = p_info.get("progress_percentage", 0.0)
+                    comp_tasks = p_info.get("completed_tasks", 0)
+                    tot_tasks = p_info.get("total_tasks", 0)
 
-                        # Monitorar disciplina com calculate_progress.py
-                        with col_prog:
-                            if st.button("📊 Monitorar", key=f"prog_btn_{subject_id}"):
-                                st.session_state[f"show_progress_{subject_id}"] = not st.session_state.get(f"show_progress_{subject_id}", False)
+                    with st.container(border=True):
+                        # Nome da disciplina como título dentro da caixa
+                        st.subheader(f"📚 {subject_name}")
 
-                        # Editar disciplina
+                        # Professor e carga horária no mesmo parágrafo
+                        st.markdown(f"👨‍🏫 {teacher} &nbsp;—&nbsp; {hours_str}")
+
+                        # 📊 Progresso % e relação de tarefas concluídas/total acima da barra
+                        st.markdown(f"📊 **Progresso: {pct}%** &nbsp;—&nbsp; Tarefas: **{comp_tasks} / {tot_tasks}**")
+                        st.progress(min(float(pct) / 100.0, 1.0))
+
+                        # Botões de ação: Editar e Excluir
+                        col_edit, col_del = st.columns(2)
                         with col_edit:
                             if st.button("✏️ Editar", key=f"edit_btn_{subject_id}"):
                                 st.session_state[f"editing_subject_{subject_id}"] = True
 
-                        # Excluir disciplina
                         with col_del:
                             if st.button("🗑️ Excluir", key=f"del_btn_{subject_id}", type="secondary"):
                                 st.session_state[f"confirm_delete_subject_{subject_id}"] = True
-
-                        # Exibição do monitoramento de progresso da disciplina
-                        if st.session_state.get(f"show_progress_{subject_id}"):
-                            st.markdown("---")
-                            st.markdown("##### 📊 Monitoramento de Progresso")
-                            prog_info = calculate_subject_progress(subject_id, auth_token=auth_token)
-
-                            if prog_info.get("status") == "success":
-                                pct = prog_info.get("progress_percentage", 0.0)
-                                st.write(f"**Conclusão das Tarefas:** `{pct}%`")
-                                st.progress(min(pct / 100.0, 1.0))
-
-                                p1, p2, p3 = st.columns(3)
-                                p1.metric("Total Tarefas", prog_info.get("total_tasks", 0))
-                                p2.metric("Concluídas", prog_info.get("completed_tasks", 0))
-                                p3.metric("Pendentes", prog_info.get("pending_tasks", 0))
-
-                                with st.expander("📄 Ver JSON do Script"):
-                                    st.json(prog_info)
-                            else:
-                                st.error(prog_info.get("error", "Não foi possível carregar o progresso."))
 
                         # Confirmação de exclusão
                         if st.session_state.get(f"confirm_delete_subject_{subject_id}"):
@@ -147,11 +145,17 @@ with tab_lista:
                                     value=teacher if teacher != "Não informado" else "",
                                     key=f"edit_teacher_{subject_id}",
                                 )
+                                initial_hours = 60
+                                if hours_val is not None and str(hours_val).isdigit():
+                                    val = int(hours_val)
+                                    if 1 <= val <= 500:
+                                        initial_hours = val
+
                                 edit_horas = st.number_input(
                                     "Carga Horária (horas)",
                                     min_value=1,
                                     max_value=500,
-                                    value=int(hours) if str(hours).isdigit() else 60,
+                                    value=initial_hours,
                                     step=10,
                                     key=f"edit_hours_{subject_id}",
                                 )
