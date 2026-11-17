@@ -260,6 +260,7 @@ def calculate_all_subjects_progress(
         "total_completed_tasks": total_all_completed,
         "overall_progress_percentage": overall_pct,
         "subjects": progress_by_subject,
+        "subjects_progress": progress_by_subject,
     }
 
     return json.dumps(result, indent=2, ensure_ascii=False) if as_json else result
