@@ -36,235 +36,305 @@ def parse_date(date_val):
         return None
 
 
-if not auth_token:
-    st.warning("⚠️ Você precisa estar conectado para visualizar suas tarefas acadêmicas.")
-    st.info("Acesse a página **👤 Perfil** no menu lateral para fazer login ou criar sua conta.")
-else:
-    # Carrega disciplinas para vincular às tarefas
-    subjects_list = subject_service.list_subjects(auth_token)
-    subject_map = {s["id"]: s.get("name", f"Disciplina #{s['id']}") for s in subjects_list if "id" in s}
+# Abas para separar Listagem e Cadastro (similar a 1_📚_Disciplinas.py)
+tab_lista, tab_novo = st.tabs(["📋 Minhas Tarefas", "➕ Nova Tarefa"])
 
-    # Cabeçalho e filtros de busca
-    col_busca, col_filtro = st.columns([3, 1])
+with tab_lista:
+    st.subheader("Tarefas Cadastradas")
 
-    with col_busca:
-        search = st.text_input("Buscar tarefa...", placeholder="Ex: Estudar Pandas, Prova P1...")
+    if not auth_token:
+        st.warning("⚠️ Você precisa estar conectado para visualizar suas tarefas acadêmicas.")
+        st.info("Acesse a página **👤 Perfil** no menu lateral para fazer login ou criar sua conta.")
+    else:
+        # Carrega disciplinas para vincular às tarefas com mapeamento robusto
+        subjects_list = subject_service.list_subjects(auth_token)
+        subject_map = {}
+        for s in subjects_list:
+            if "id" in s:
+                s_name = s.get("name") or f"Disciplina #{s['id']}"
+                subject_map[s["id"]] = s_name
+                subject_map[str(s["id"])] = s_name
+                try:
+                    subject_map[int(s["id"])] = s_name
+                except (ValueError, TypeError):
+                    pass
 
-    with col_filtro:
-        filtro_status = st.selectbox(
-            "Filtrar por Status",
-            ["Todas", "Pendente", "Em Andamento", "Concluída"]
-        )
+        # Cabeçalho e filtros de busca mantidos conforme solicitado
+        col_busca, col_filtro = st.columns([3, 1])
 
-    st.markdown("---")
+        with col_busca:
+            search = st.text_input("Buscar tarefa...", placeholder="Ex: Estudar Pandas, Prova P1...")
 
-    # Carregamento das tarefas a partir do endpoint do Xano
-    with st.spinner("Carregando tarefas do Xano..."):
-        success, result = task_service.fetch_tasks(auth_token)
+        with col_filtro:
+            filtro_status = st.selectbox(
+                "Filtrar por Status",
+                ["Todas", "Pendente", "Em Andamento", "Concluída"]
+            )
 
-    if success:
-        if isinstance(result, list) and len(result) > 0:
-            # Mapeamento do filtro para a chave do banco
-            filter_map = {
-                "Pendente": "pending",
-                "Em Andamento": "in_progress",
-                "Concluída": "completed",
-            }
-            target_status = filter_map.get(filtro_status)
+        st.markdown("---")
 
-            # Filtragem local
-            filtered_tasks = []
-            for task in result:
-                title = str(task.get("title", "")).lower()
-                desc = str(task.get("description", "")).lower()
-                query = search.strip().lower()
+        # Carregamento das tarefas a partir do endpoint do Xano
+        with st.spinner("Carregando tarefas do Xano..."):
+            success, result = task_service.fetch_tasks(auth_token)
 
-                matches_search = (not query) or (query in title or query in desc)
-                matches_status = (target_status is None) or (task.get("status") == target_status)
+        if success:
+            if isinstance(result, list) and len(result) > 0:
+                with st.expander("Exibir Tabela"):
+                    display_tasks = []
+                    for t in result:
+                        status_raw = t.get("status", "pending")
+                        status_badge = STATUS_CONFIG.get(status_raw, {}).get("badge", str(status_raw).title())
+                        sub_id = t.get("subject_id")
+                        raw_name = None
+                        if sub_id is not None:
+                            raw_name = subject_map.get(sub_id) or subject_map.get(str(sub_id))
+                            try:
+                                raw_name = raw_name or subject_map.get(int(sub_id))
+                            except (ValueError, TypeError):
+                                pass
+                        sub_name = str(raw_name).strip() if raw_name and str(raw_name).strip().lower() not in ("none", "", "null", "undefined") else "Sem disciplina vinculada"
+                        due_date = str(t.get("due_date"))[:10] if t.get("due_date") else "Não definida"
 
-                if matches_search and matches_status:
-                    filtered_tasks.append(task)
+                        display_tasks.append({
+                            "ID": t.get("id"),
+                            "Status": status_badge,
+                            "Título": t.get("title", "Sem Título"),
+                            "Disciplina": sub_name,
+                            "Prazo": due_date,
+                        })
+                    st.dataframe(display_tasks, use_container_width=True)
 
-            if filtered_tasks:
-                st.write(f"Exibindo **{len(filtered_tasks)}** de **{len(result)}** tarefas:")
-                for task in filtered_tasks:
-                    task_id = task.get("id")
-                    title = task.get("title", "Sem Título")
-                    status = task.get("status", "pending")
-                    desc = task.get("description") or "Nenhuma descrição fornecida."
-                    due_date = task.get("due_date")
-                    due_display = str(due_date)[:10] if due_date else "Não definida"
-                    sub_id = task.get("subject_id")
-                    sub_name = subject_map.get(sub_id) if sub_id else None
+                # Mapeamento do filtro para a chave do banco
+                filter_map = {
+                    "Pendente": "pending",
+                    "Em Andamento": "in_progress",
+                    "Concluída": "completed",
+                }
+                target_status = filter_map.get(filtro_status)
 
-                    status_badge = STATUS_CONFIG.get(status, {}).get("badge", f"📌 {str(status).title()}")
+                # Filtragem local
+                filtered_tasks = []
+                for task in result:
+                    title = str(task.get("title", "")).lower()
+                    desc = str(task.get("description", "")).lower()
+                    query = search.strip().lower()
 
-                    with st.expander(f"{status_badge} — {title}", expanded=False):
-                        st.markdown(f"**Descrição:** {desc}")
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            st.markdown(f"**Prazo:** `{due_display}`")
-                            st.markdown(f"**Status:** {status_badge}")
-                        with col_b:
-                            if sub_name:
-                                st.markdown(f"**Disciplina:** 📚 {sub_name}")
-                            elif sub_id:
-                                st.markdown(f"**Disciplina:** 📚 Disciplina #{sub_id}")
-                            else:
-                                st.markdown("**Disciplina:** *Nenhuma (não vinculada)*")
-                            st.caption(f"ID da Tarefa: {task_id}")
+                    matches_search = (not query) or (query in title or query in desc)
+                    matches_status = (target_status is None) or (task.get("status") == target_status)
 
-                        st.markdown("---")
+                    if matches_search and matches_status:
+                        filtered_tasks.append(task)
 
-                        # Ações rápidas: toggle de status e botões de editar/excluir
-                        col_toggle, col_edit_btn, col_del_btn = st.columns(3)
+                if filtered_tasks:
+                    st.write(f"Exibindo **{len(filtered_tasks)}** de **{len(result)}** tarefa(s):")
 
-                        with col_toggle:
-                            if status == "completed":
-                                toggle_label = "🔄 Reabrir Tarefa"
-                                next_status = "pending"
-                            else:
-                                toggle_label = "✅ Marcar como Concluída"
-                                next_status = "completed"
+                    # Agrupamento das tarefas por disciplina se disponível
+                    tasks_by_subject = {}
+                    for task in filtered_tasks:
+                        sub_id = task.get("subject_id")
+                        raw_name = None
+                        if sub_id is not None:
+                            raw_name = subject_map.get(sub_id) or subject_map.get(str(sub_id))
+                            try:
+                                raw_name = raw_name or subject_map.get(int(sub_id))
+                            except (ValueError, TypeError):
+                                pass
 
-                            if st.button(toggle_label, key=f"toggle_{task_id}"):
-                                with st.spinner("Atualizando status..."):
-                                    # Preserva todos os campos existentes para não perder dados
-                                    updated = task_service.update_task(
-                                        task_id,
-                                        title=title,
-                                        description=task.get("description") or "",
-                                        due_date=due_date,
-                                        subject_id=sub_id,
-                                        status=next_status,
-                                        auth_token=auth_token,
-                                    )
-                                if updated:
-                                    st.success(f"Status atualizado com sucesso!")
-                                    st.rerun()
+                        if not raw_name or str(raw_name).strip().lower() in ("none", "", "null", "undefined"):
+                            sub_name = "Sem disciplina vinculada"
+                        else:
+                            sub_name = str(raw_name).strip()
+
+                        if sub_name not in tasks_by_subject:
+                            tasks_by_subject[sub_name] = []
+                        tasks_by_subject[sub_name].append(task)
+
+                    # Ordena as seções para exibir disciplinas cadastradas primeiro e sem disciplina no final
+                    sorted_subjects = sorted(
+                        tasks_by_subject.keys(),
+                        key=lambda d: (d == "Sem disciplina vinculada", d.lower()),
+                    )
+
+                    for disc_name in sorted_subjects:
+                        group_tasks = tasks_by_subject[disc_name]
+                        st.markdown(f"#### 📚 {disc_name}")
+
+                        for task in group_tasks:
+                            task_id = task.get("id")
+                            title = task.get("title", "Sem Título")
+                            status = task.get("status", "pending")
+                            desc = task.get("description") or "Nenhuma descrição fornecida."
+                            due_date = task.get("due_date")
+                            due_display = str(due_date)[:10] if due_date else "Não definida"
+
+                            status_badge = STATUS_CONFIG.get(status, {}).get("badge", f"📌 {str(status).title()}")
+
+                            # Caixa de exibição fixa por tarefa (similar a 1_📚_Disciplinas.py)
+                            with st.container(border=True):
+                                # Título da tarefa com indicador de status
+                                st.subheader(f"{status_badge} — {title}")
+
+                                # Prazo da tarefa
+                                st.markdown(f"📅 Prazo: `{due_display}`")
+
+                                # Descrição da tarefa
+                                if desc and desc != "Nenhuma descrição fornecida.":
+                                    st.markdown(f"**Descrição:** {desc}")
+
+                                st.write("")
+
+                            # Ações rápidas: toggle de status e botões de editar/excluir
+                            col_toggle, col_edit_btn, col_del_btn = st.columns(3)
+
+                            with col_toggle:
+                                if status == "completed":
+                                    toggle_label = "🔄 Reabrir Tarefa"
+                                    next_status = "pending"
                                 else:
-                                    st.error("Falha ao atualizar o status. Tente novamente.")
+                                    toggle_label = "✅ Marcar como Concluída"
+                                    next_status = "completed"
 
-                        with col_edit_btn:
-                            if st.button("✏️ Editar", key=f"edit_task_btn_{task_id}"):
-                                st.session_state[f"editing_task_{task_id}"] = True
-
-                        with col_del_btn:
-                            if st.button("🗑️ Excluir", key=f"del_task_btn_{task_id}", type="secondary"):
-                                st.session_state[f"confirm_delete_task_{task_id}"] = True
-
-                        # Confirmação de exclusão
-                        if st.session_state.get(f"confirm_delete_task_{task_id}"):
-                            st.warning(f"Tem certeza que deseja excluir **{title}**?")
-                            col_yes, col_no = st.columns(2)
-                            with col_yes:
-                                if st.button("✅ Confirmar Exclusão", key=f"del_yes_{task_id}", type="primary"):
-                                    with st.spinner("Excluindo..."):
-                                        deleted = task_service.delete_task(task_id, auth_token=auth_token)
-                                    if deleted:
-                                        st.success(f"Tarefa '{title}' excluída com sucesso!")
-                                        st.session_state.pop(f"confirm_delete_task_{task_id}", None)
-                                        st.rerun()
-                                    else:
-                                        st.error("Falha ao excluir a tarefa. Tente novamente.")
-                            with col_no:
-                                if st.button("❌ Cancelar", key=f"del_no_{task_id}"):
-                                    st.session_state.pop(f"confirm_delete_task_{task_id}", None)
-                                    st.rerun()
-
-                        # Formulário de edição inline
-                        if st.session_state.get(f"editing_task_{task_id}"):
-                            st.markdown("---")
-                            st.markdown("**Editar Tarefa:**")
-
-                            # Opções de disciplina para edição
-                            subject_choices = [None] + [s["id"] for s in subjects_list if "id" in s]
-                            if sub_id and sub_id not in subject_choices:
-                                subject_choices.append(sub_id)
-                            current_sub_idx = subject_choices.index(sub_id) if sub_id in subject_choices else 0
-
-                            # Índice do status atual
-                            current_status_idx = STATUS_KEYS.index(status) if status in STATUS_KEYS else 0
-
-                            with st.form(key=f"form_edit_task_{task_id}"):
-                                edit_title = st.text_input(
-                                    "Título *",
-                                    value=title,
-                                    key=f"edit_task_title_{task_id}",
-                                )
-                                edit_desc = st.text_area(
-                                    "Descrição",
-                                    value=task.get("description") or "",
-                                    key=f"edit_task_desc_{task_id}",
-                                )
-                                col_edit_date, col_edit_status = st.columns(2)
-                                with col_edit_date:
-                                    edit_date = st.date_input(
-                                        "Data de Entrega",
-                                        value=parse_date(due_date),
-                                        key=f"edit_task_date_{task_id}",
-                                    )
-                                with col_edit_status:
-                                    edit_status_idx = st.selectbox(
-                                        "Status",
-                                        options=list(range(len(STATUS_KEYS))),
-                                        index=current_status_idx,
-                                        format_func=lambda i: STATUS_PORTUGUESE_LABELS[i],
-                                        key=f"edit_task_status_{task_id}",
-                                    )
-                                edit_sub = st.selectbox(
-                                    "Disciplina Associada",
-                                    options=subject_choices,
-                                    index=current_sub_idx,
-                                    format_func=lambda sid: "Nenhuma (não vinculada)" if sid is None else f"📚 {subject_map.get(sid, f'ID {sid}')}",
-                                    key=f"edit_task_sub_{task_id}",
-                                )
-
-                                col_save, col_cancel = st.columns(2)
-                                with col_save:
-                                    save_edit = st.form_submit_button("💾 Salvar Alterações", type="primary")
-                                with col_cancel:
-                                    cancel_edit = st.form_submit_button("Cancelar")
-
-                            if save_edit:
-                                if not edit_title.strip():
-                                    st.error("O título da tarefa é obrigatório.")
-                                else:
-                                    with st.spinner("Atualizando no Xano..."):
-                                        chosen_status_key = STATUS_KEYS[edit_status_idx]
+                                if st.button(toggle_label, key=f"toggle_{task_id}"):
+                                    with st.spinner("Atualizando status..."):
                                         updated = task_service.update_task(
                                             task_id,
-                                            title=edit_title,
-                                            description=edit_desc,
-                                            due_date=str(edit_date) if edit_date else None,
-                                            status=chosen_status_key,
-                                            subject_id=edit_sub,
+                                            title=title,
+                                            description=task.get("description") or "",
+                                            due_date=due_date,
+                                            subject_id=sub_id,
+                                            status=next_status,
                                             auth_token=auth_token,
                                         )
                                     if updated:
-                                        st.success(f"Tarefa '{edit_title}' atualizada com sucesso!")
-                                        st.session_state.pop(f"editing_task_{task_id}", None)
+                                        st.success("Status atualizado com sucesso!")
                                         st.rerun()
                                     else:
-                                        st.error("Falha ao atualizar a tarefa. Tente novamente.")
+                                        st.error("Falha ao atualizar o status. Tente novamente.")
 
-                            if cancel_edit:
-                                st.session_state.pop(f"editing_task_{task_id}", None)
-                                st.rerun()
+                            with col_edit_btn:
+                                if st.button("✏️ Editar", key=f"edit_task_btn_{task_id}"):
+                                    st.session_state[f"editing_task_{task_id}"] = True
+
+                            with col_del_btn:
+                                if st.button("🗑️ Excluir", key=f"del_task_btn_{task_id}", type="secondary"):
+                                    st.session_state[f"confirm_delete_task_{task_id}"] = True
+
+                            # Confirmação de exclusão inline
+                            if st.session_state.get(f"confirm_delete_task_{task_id}"):
+                                st.warning(f"Tem certeza que deseja excluir **{title}**?")
+                                col_yes, col_no = st.columns(2)
+                                with col_yes:
+                                    if st.button("✅ Confirmar Exclusão", key=f"del_yes_{task_id}", type="primary"):
+                                        with st.spinner("Excluindo..."):
+                                            deleted = task_service.delete_task(task_id, auth_token=auth_token)
+                                        if deleted:
+                                            st.success(f"Tarefa '{title}' excluída com sucesso!")
+                                            st.session_state.pop(f"confirm_delete_task_{task_id}", None)
+                                            st.rerun()
+                                        else:
+                                            st.error("Falha ao excluir a tarefa. Tente novamente.")
+                                with col_no:
+                                    if st.button("❌ Cancelar", key=f"del_no_{task_id}"):
+                                        st.session_state.pop(f"confirm_delete_task_{task_id}", None)
+                                        st.rerun()
+
+                            # Formulário de edição inline
+                            if st.session_state.get(f"editing_task_{task_id}"):
+                                st.markdown("---")
+                                st.markdown("**Editar Tarefa:**")
+
+                                subject_choices = [None] + [s["id"] for s in subjects_list if "id" in s]
+                                if sub_id and sub_id not in subject_choices:
+                                    subject_choices.append(sub_id)
+                                current_sub_idx = subject_choices.index(sub_id) if sub_id in subject_choices else 0
+
+                                current_status_idx = STATUS_KEYS.index(status) if status in STATUS_KEYS else 0
+
+                                with st.form(key=f"form_edit_task_{task_id}"):
+                                    edit_title = st.text_input(
+                                        "Título *",
+                                        value=title,
+                                        key=f"edit_task_title_{task_id}",
+                                    )
+                                    edit_desc = st.text_area(
+                                        "Descrição",
+                                        value=task.get("description") or "",
+                                        key=f"edit_task_desc_{task_id}",
+                                    )
+                                    col_edit_date, col_edit_status = st.columns(2)
+                                    with col_edit_date:
+                                        edit_date = st.date_input(
+                                            "Data de Entrega",
+                                            value=parse_date(due_date),
+                                            key=f"edit_task_date_{task_id}",
+                                        )
+                                    with col_edit_status:
+                                        edit_status_idx = st.selectbox(
+                                            "Status",
+                                            options=list(range(len(STATUS_KEYS))),
+                                            index=current_status_idx,
+                                            format_func=lambda i: STATUS_PORTUGUESE_LABELS[i],
+                                            key=f"edit_task_status_{task_id}",
+                                        )
+                                    edit_sub = st.selectbox(
+                                        "Disciplina Associada",
+                                        options=subject_choices,
+                                        index=current_sub_idx,
+                                        format_func=lambda sid: "Nenhuma (não vinculada)" if sid is None else f"📚 {subject_map.get(sid, f'ID {sid}')}",
+                                        key=f"edit_task_sub_{task_id}",
+                                    )
+
+                                    col_save, col_cancel = st.columns(2)
+                                    with col_save:
+                                        save_edit = st.form_submit_button("💾 Salvar Alterações", type="primary")
+                                    with col_cancel:
+                                        cancel_edit = st.form_submit_button("Cancelar")
+
+                                if save_edit:
+                                    if not edit_title.strip():
+                                        st.error("O título da tarefa é obrigatório.")
+                                    else:
+                                        with st.spinner("Atualizando no Xano..."):
+                                            chosen_status_key = STATUS_KEYS[edit_status_idx]
+                                            updated = task_service.update_task(
+                                                task_id,
+                                                title=edit_title,
+                                                description=edit_desc,
+                                                due_date=str(edit_date) if edit_date else None,
+                                                status=chosen_status_key,
+                                                subject_id=edit_sub,
+                                                auth_token=auth_token,
+                                            )
+                                        if updated:
+                                            st.success(f"Tarefa '{edit_title}' atualizada com sucesso!")
+                                            st.session_state.pop(f"editing_task_{task_id}", None)
+                                            st.rerun()
+                                        else:
+                                            st.error("Falha ao atualizar a tarefa. Tente novamente.")
+
+                                if cancel_edit:
+                                    st.session_state.pop(f"editing_task_{task_id}", None)
+                                    st.rerun()
+                else:
+                    st.info("ℹ️ Nenhuma tarefa encontrada com os filtros aplicados.")
             else:
-                st.info("ℹ️ Nenhuma tarefa encontrada com os filtros aplicados.")
+                st.info("ℹ️ Nenhuma tarefa cadastrada no momento. Suas tarefas do Xano aparecerão aqui.")
         else:
-            st.info("ℹ️ Nenhuma tarefa cadastrada no momento. Suas tarefas do Xano aparecerão aqui.")
-    else:
-        st.error(f"Falha ao carregar tarefas: {result}")
-        if st.button("Tentar Novamente"):
-            st.rerun()
+            st.error(f"Falha ao carregar tarefas: {result}")
+            if st.button("Tentar Novamente"):
+                st.rerun()
 
-    # Seção para cadastro de nova tarefa
-    st.markdown("---")
-    with st.expander("➕ Adicionar Nova Tarefa"):
-        # Opções de disciplina para nova tarefa
+with tab_novo:
+    st.subheader("Cadastrar Nova Tarefa")
+
+    if not auth_token:
+        st.warning("⚠️ Você precisa estar conectado para cadastrar uma nova tarefa.")
+        st.info("Acesse a página **👤 Perfil** para fazer login.")
+    else:
+        # Carrega opções de disciplina para a nova tarefa
+        subjects_list = subject_service.list_subjects(auth_token)
         new_subject_choices = [None] + [s["id"] for s in subjects_list if "id" in s]
+        subject_map_new = {s["id"]: s.get("name", f"Disciplina #{s['id']}") for s in subjects_list if "id" in s}
 
         with st.form("form_nova_tarefa"):
             novo_titulo = st.text_input("Título da Tarefa *", placeholder="Ex: Entregar Relatório P1")
@@ -285,7 +355,7 @@ else:
                 "Disciplina (Opcional)",
                 options=new_subject_choices,
                 index=0,
-                format_func=lambda sid: "Nenhuma (não vinculada)" if sid is None else f"📚 {subject_map.get(sid, f'ID {sid}')}",
+                format_func=lambda sid: "Nenhuma (não vinculada)" if sid is None else f"📚 {subject_map_new.get(sid, f'ID {sid}')}",
             )
 
             btn_salvar_tarefa = st.form_submit_button("Salvar Tarefa", type="primary")

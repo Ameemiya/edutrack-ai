@@ -10,9 +10,6 @@ render_sidebar_profile()
 
 st.title("👤 Perfil do Usuário")
 
-# Informações da URL de conexão configurada em secrets/ambiente
-auth_api_url = auth_service.get_auth_api_url()
-
 # Verifica se o usuário já possui um token na sessão
 auth_token = st.session_state.get("auth_token")
 
@@ -23,7 +20,7 @@ if auth_token:
 
     if success and isinstance(user_data, dict):
         st.session_state["user"] = user_data
-        st.success("🟢 Sessão ativa e autenticada com sucesso no Xano!")
+        st.success("🟢 Sessão ativa e autenticada com sucesso")
 
         with st.container(border=True):
             st.subheader(f"Olá, {user_data.get('name', 'Estudante')}! 👋")
@@ -35,7 +32,6 @@ if auth_token:
                 st.markdown(f"**E-mail:** {user_data.get('email', 'N/D')}")
             with col2:
                 st.markdown(f"**ID do Usuário:** `{user_data.get('id', 'N/D')}`")
-                st.markdown(f"**Cadastrado em:** {user_data.get('created_at', 'N/D')}")
 
         st.write("")
         if st.button("🚪 Sair da Conta (Logout)", type="secondary", use_container_width=True):
@@ -103,8 +99,5 @@ else:
                         else:
                             st.error(f"Falha no cadastro: {res}")
 
-    # Informações técnicas de configuração
-    with st.expander("ℹ️ Informações de Conexão com o Backend"):
-        st.caption(f"**Endpoint Base:** `{auth_api_url}`")
-        st.caption("A URL é lida do arquivo `.env` na raiz do projeto (`XANO_AUTH_API_URL`).")
+
 
