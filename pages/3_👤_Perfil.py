@@ -3,7 +3,7 @@ from services import auth_service
 from components.sidebar_profile import render_sidebar_profile
 
 # Configuração da Página
-st.set_page_config(page_title="Perfil e Autenticação", page_icon="👤", layout="centered")
+st.set_page_config(page_title="Perfil e Autenticação", page_icon="👤", layout="wide")
 
 # Botão de Perfil Flutuante estilo Discord
 render_sidebar_profile()
