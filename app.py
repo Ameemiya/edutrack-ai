@@ -17,7 +17,15 @@ user_data = st.session_state.get("user")
 
 # Status de Conexão na Sidebar
 if not auth_token:
-    st.sidebar.warning("⚠️ Não conectado")
+    st.sidebar.markdown(
+        """
+        <div class="edutrack-alert-warning" title="Não conectado">
+            <span class="edutrack-alert-icon">⚠️</span>
+            <span class="edutrack-alert-text">Não conectado</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # Botão de Perfil Flutuante estilo Discord
 render_sidebar_profile()
